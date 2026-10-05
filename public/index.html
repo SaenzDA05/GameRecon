@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GameRecon — Where to Watch</title>
+  <meta name="description" content="Every game today and this week, where to watch it, and live play-by-play." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark">▶</span>
+        <span>Game<b>RECON</b></span>
+      </a>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-view="today" role="tab">Today</button>
+        <button class="tab" data-view="week" role="tab">This Week</button>
+        <button class="tab" data-view="calendar" role="tab">Calendar</button>
+      </nav>
+      <div class="top-actions">
+        <button class="btn btn-star" id="openTeams">★ My Teams</button>
+        <button class="btn" id="authBtn">Sign in</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="pinned" class="pinned" hidden>
+      <div class="section-head">
+        <h2>★ Pinned</h2>
+        <span class="muted">Your teams' next games</span>
+      </div>
+      <div id="pinnedList" class="game-list"></div>
+    </section>
+
+    <section class="controls">
+      <div class="chips" id="sportChips"></div>
+      <div class="controls-right">
+        <button class="btn btn-ghost small-btn" id="openOrder" title="Choose which sports show first">⇅ Reorder</button>
+        <input id="search" class="search" type="search" placeholder="Search a team or player…" autocomplete="off" />
+      </div>
+    </section>
+    <div class="order-hint muted small" id="orderHint"></div>
+
+    <section id="calendarPanel" class="calendar" hidden>
+      <div class="cal-head">
+        <button class="btn btn-ghost" id="calPrev" aria-label="Previous month">‹</button>
+        <h3 id="calTitle"></h3>
+        <button class="btn btn-ghost" id="calNext" aria-label="Next month">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2 id="viewTitle">Today</h2>
+        <span class="muted" id="viewSub"></span>
+      </div>
+      <div id="games" class="game-list"></div>
+    </section>
+
+    <footer class="foot muted">
+      Schedules, scores, broadcasts &amp; play-by-play from ESPN. Subscription prices are US list prices (monthly, base plan, before promos &amp; taxes), last checked <span id="pricesChecked"></span> — confirm with the provider before you sign up.
+      Local/regional channels only carry games in that team's home area.
+      <br>GameRecon is an independent fan project, not affiliated with ESPN, any league, team, or streaming service. Team names and logos belong to their owners.
+    </footer>
+  </main>
+
+  <!-- Favorites picker -->
+  <dialog id="teamsDialog" class="dialog">
+    <form method="dialog" class="dialog-inner">
+      <div class="dialog-head">
+        <h2>Pick your teams</h2>
+        <button class="btn btn-ghost" value="close" aria-label="Close">✕</button>
+      </div>
+      <p class="muted small">Favorites get pinned to the top with game times and where to watch. You can also tap ★ next to any tennis player or fighter.</p>
+      <div class="chips" id="teamLeagueChips"></div>
+      <input id="teamSearch" class="search" type="search" placeholder="Filter teams…" autocomplete="off" />
+      <div id="teamGrid" class="team-grid"></div>
+      <div class="dialog-foot">
+        <span class="muted small" id="teamsSaveNote"></span>
+        <button class="btn btn-primary" value="done">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Sign in / create account -->
+  <dialog id="authDialog" class="dialog dialog-sm">
+    <form class="dialog-inner" id="authForm" novalidate>
+      <div class="dialog-head">
+        <div class="seg" role="tablist">
+          <button type="button" class="seg-btn active" data-auth-mode="login">Sign in</button>
+          <button type="button" class="seg-btn" data-auth-mode="signup">Create account</button>
+        </div>
+        <button type="button" class="btn btn-ghost" data-close aria-label="Close">✕</button>
+      </div>
+      <p class="muted small" id="authBlurb">Sign in to sync your teams and sport order on every device.</p>
+      <label class="field" id="nameField" hidden>
+        <span>Name</span>
+        <input name="name" autocomplete="name" maxlength="60" />
+      </label>
+      <label class="field" id="emailField">
+        <span>Email</span>
+        <input name="email" type="email" autocomplete="email" required />
+      </label>
+      <label class="field" id="pwField">
+        <span id="pwLabel">Password</span>
+        <input name="password" type="password" autocomplete="current-password" minlength="8" required />
+        <small class="muted" id="pwHint" hidden>At least 8 characters</small>
+      </label>
+      <label class="field" id="pw2Field" hidden>
+        <span>Confirm new password</span>
+        <input name="password2" type="password" autocomplete="new-password" minlength="8" />
+      </label>
+      <div class="form-error" id="authError" role="alert"></div>
+      <div class="form-ok" id="authOk" role="status" hidden></div>
+      <button class="btn btn-primary btn-block" id="authSubmit">Sign in</button>
+      <button type="button" class="link-btn" id="forgotLink" data-auth-mode="forgot">Forgot password?</button>
+      <button type="button" class="link-btn" id="backToLogin" data-auth-mode="login" hidden>← Back to sign in</button>
+    </form>
+  </dialog>
+
+  <!-- Profile / settings -->
+  <dialog id="profileDialog" class="dialog">
+    <form method="dialog" class="dialog-inner">
+      <div class="dialog-head">
+        <h2>Your profile</h2>
+        <button class="btn btn-ghost" value="close" aria-label="Close">✕</button>
+      </div>
+      <div class="profile-scroll">
+        <section class="pf-section" id="pfAccount"></section>
+
+        <section class="pf-section">
+          <h3>Your area</h3>
+          <p class="muted small">Used to rank sports by what's popular near you when you haven't set your own order.</p>
+          <select id="areaSelect" class="select"></select>
+        </section>
+
+        <section class="pf-section">
+          <div class="pf-row">
+            <h3>Sport order</h3>
+            <button type="button" class="btn btn-ghost small-btn" id="resetOrder">Reset to popular near me</button>
+          </div>
+          <p class="muted small" id="orderMode"></p>
+          <ol class="order-list" id="orderList"></ol>
+        </section>
+
+        <section class="pf-section">
+          <h3>Pinned teams &amp; players</h3>
+          <div class="fav-chips" id="favChips"></div>
+        </section>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="networks.js"></script>
+  <script src="sports.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
