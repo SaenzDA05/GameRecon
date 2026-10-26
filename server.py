@@ -7,6 +7,8 @@ Stdlib only. Production env vars:
     SECURE_COOKIES=1   serving over HTTPS (Secure cookies + HSTS)
     TRUST_PROXY=1      behind a load balancer; use X-Forwarded-For for client IPs
     DATA_DIR=/data     where the SQLite database lives (a persistent volume)
+    TURSO_DATABASE_URL / TURSO_AUTH_TOKEN  keep accounts in Turso instead (needed on hosts
+                       without a persistent disk, e.g. Render's free tier)
     PUBLIC_URL=https://gamerecon.app   base URL used in emailed links (never taken from the Host header)
     RESEND_API_KEY / EMAIL_FROM        see mailer.py
 """
@@ -304,6 +306,6 @@ ROUTES = {
 
 if __name__ == "__main__":
     db.init()
-    print(f"GameRecon running at http://localhost:{PORT} (db: {db.DB_PATH}, "
+    print(f"GameRecon running at http://localhost:{PORT} (db: {db.describe()}, "
           f"email: {'Resend' if mailer.API_KEY else 'console (dev)'})", flush=True)
     ThreadingHTTPServer(("", PORT), Handler).serve_forever()

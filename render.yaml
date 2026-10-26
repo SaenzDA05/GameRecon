@@ -1,0 +1,20 @@
+# Render Blueprint: free web service. Accounts live in Turso (Render's free tier has no
+# persistent disk). Render asks for the `sync: false` values when you create the Blueprint.
+services:
+  - type: web
+    name: gamerecon
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: SECURE_COOKIES
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: PUBLIC_URL
+        sync: false

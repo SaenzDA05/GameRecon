@@ -41,6 +41,18 @@ Then open http://localhost:5173 (`PORT=8080 python server.py` to change port).
 `GET /api/config`, `GET /api/day?date=YYYYMMDD`, `GET /api/plays?league=mlb&id=…`,
 `POST /api/auth/signup|login|logout`, `GET|PUT /api/me`
 
+## Deploying for free (Render + Turso)
+
+Render's free web service sleeps after 15 minutes without visitors (about a minute to wake) and has
+no persistent disk, so accounts live in a free [Turso](https://turso.tech) database instead.
+
+1. **Turso:** sign up → **Create Database** → copy its URL (`libsql://…turso.io`) and create a token.
+2. **Render:** sign up with GitHub → **New → Blueprint** → pick this repo. `render.yaml` sets everything up;
+   paste `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` when asked, leave `PUBLIC_URL` blank for now.
+3. After the first deploy, copy the `https://…onrender.com` address into `PUBLIC_URL` (Environment tab).
+
+Every push to `main` redeploys automatically.
+
 ## Deploying (Railway)
 
 The repo includes a `Dockerfile` and `railway.json` (health check at `/api/health`).
