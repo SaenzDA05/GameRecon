@@ -8,6 +8,7 @@ Event kinds:
   golf   — a tournament with a leaderboard
 """
 import json
+import re
 import threading
 import time
 import urllib.request
@@ -131,6 +132,12 @@ def _flag(a):
     return (a.get("flag") or {}).get("href") or ""
 
 
+def _hex(c):
+    """ESPN team colors are bare hex ('2f241d'); return '#2f241d' or '' if malformed."""
+    c = (c or "").strip().lstrip("#")
+    return f"#{c.lower()}" if re.fullmatch(r"[0-9a-fA-F]{6}", c) else ""
+
+
 def _record(x):
     rec = ((x.get("records") or [{}])[0] or {}).get("summary") or ""
     return "" if rec in ("0-0", "0-0-0") else rec
@@ -175,6 +182,7 @@ def _side(league_id, c, side, idx):
         "short": t.get("shortDisplayName") or t.get("displayName") or a.get("shortName") or "TBD",
         "abbr": t.get("abbreviation") or "",
         "logo": t.get("logo") or _logos.get(f"{league_id}:{tid}") or _flag(a),
+        "color": _hex(t.get("color")),
         "score": x.get("score"),
         "winner": x.get("winner"),
         "record": _record(x),

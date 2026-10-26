@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GameRecon — Where to Watch</title>
   <meta name="description" content="Every game today and this week, where to watch it, and live play-by-play." />
+  <meta name="theme-color" content="#121315" />
+  <script>
+    // Apply the saved theme before first paint (dark is the default).
+    try { if (localStorage.getItem("gt:theme") === "light") document.documentElement.dataset.theme = "light"; } catch {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@500;600;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <a class="brand" href="#">
-        <span class="brand-mark">▶</span>
-        <span>Game<b>RECON</b></span>
+      <a class="brand" href="#" aria-label="GameRecon home">
+        <span class="brand-mark" aria-hidden="true">▶</span>
+        <span class="brand-word">Game<b>Recon</b></span>
       </a>
       <nav class="tabs" role="tablist">
         <button class="tab active" data-view="today" role="tab">Today</button>
@@ -22,52 +28,64 @@
         <button class="tab" data-view="calendar" role="tab">Calendar</button>
       </nav>
       <div class="top-actions">
-        <button class="btn btn-star" id="openTeams">★ My Teams</button>
-        <button class="btn" id="authBtn">Sign in</button>
+        <button class="icon-round" id="themeToggle" aria-label="Switch to light mode" title="Light / dark">☀</button>
+        <button class="btn btn-star" id="openTeams"><span class="star-ico">★</span><span class="hide-sm"> My Teams</span></button>
+        <button class="btn btn-primary" id="authBtn">Sign in</button>
       </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section id="pinned" class="pinned" hidden>
-      <div class="section-head">
-        <h2>★ Pinned</h2>
-        <span class="muted">Your teams' next games</span>
-      </div>
-      <div id="pinnedList" class="game-list"></div>
-    </section>
+  <section id="liveRail" class="live-rail" hidden aria-label="Live now">
+    <div class="wrap live-rail-inner">
+      <div class="live-rail-label"><span class="live-dot-lg"></span>Live<br>now</div>
+      <div class="live-tiles" id="liveTiles"></div>
+    </div>
+  </section>
 
-    <section class="controls">
+  <main class="wrap layout">
+    <aside class="sport-rail" aria-label="Sports">
+      <div class="rail-title">Sports</div>
       <div class="chips" id="sportChips"></div>
-      <div class="controls-right">
-        <button class="btn btn-ghost small-btn" id="openOrder" title="Choose which sports show first">⇅ Reorder</button>
+      <button class="rail-reorder" id="openOrder" title="Choose which sports show first">⇅ Reorder sports</button>
+    </aside>
+
+    <div class="content">
+      <section id="pinned" class="pinned" hidden>
+        <div class="section-head">
+          <h2><span class="gold">★</span> Pinned</h2>
+          <span class="muted">Your teams' next games</span>
+        </div>
+        <div id="pinnedList" class="game-list"></div>
+      </section>
+
+      <section class="controls">
         <input id="search" class="search" type="search" placeholder="Search a team or player…" autocomplete="off" />
-      </div>
-    </section>
-    <div class="order-hint muted small" id="orderHint"></div>
+        <div class="order-hint muted small" id="orderHint"></div>
+      </section>
 
-    <section id="calendarPanel" class="calendar" hidden>
-      <div class="cal-head">
-        <button class="btn btn-ghost" id="calPrev" aria-label="Previous month">‹</button>
-        <h3 id="calTitle"></h3>
-        <button class="btn btn-ghost" id="calNext" aria-label="Next month">›</button>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-    </section>
+      <section id="calendarPanel" class="calendar" hidden>
+        <div class="cal-head">
+          <button class="btn btn-ghost" id="calPrev" aria-label="Previous month">‹</button>
+          <h3 id="calTitle"></h3>
+          <button class="btn btn-ghost" id="calNext" aria-label="Next month">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </section>
 
-    <section>
-      <div class="section-head">
-        <h2 id="viewTitle">Today</h2>
-        <span class="muted" id="viewSub"></span>
-      </div>
-      <div id="games" class="game-list"></div>
-    </section>
+      <section>
+        <div class="section-head">
+          <h2 id="viewTitle">Today</h2>
+          <span class="muted" id="viewSub"></span>
+        </div>
+        <div id="games" class="game-list"></div>
+      </section>
 
-    <footer class="foot muted">
-      Schedules, scores, broadcasts &amp; play-by-play from ESPN. Subscription prices are US list prices (monthly, base plan, before promos &amp; taxes), last checked <span id="pricesChecked"></span> — confirm with the provider before you sign up.
-      Local/regional channels only carry games in that team's home area.
-      <br>GameRecon is an independent fan project, not affiliated with ESPN, any league, team, or streaming service. Team names and logos belong to their owners.
-    </footer>
+      <footer class="foot muted">
+        Schedules, scores, broadcasts &amp; play-by-play from ESPN. Subscription prices are US list prices (monthly, base plan, before promos &amp; taxes), last checked <span id="pricesChecked"></span> — confirm with the provider before you sign up.
+        Local/regional channels only carry games in that team's home area.
+        <br>GameRecon is an independent fan project, not affiliated with ESPN, any league, team, or streaming service. Team names and logos belong to their owners.
+      </footer>
+    </div>
   </main>
 
   <!-- Favorites picker -->

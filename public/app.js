@@ -307,10 +307,18 @@ function star(k, name) {
   return `<button type="button" class="star-btn ${on ? "on" : ""}" title="${on ? "Unpin" : "Pin"} ${esc(name)}" data-fav="${esc(k)}" data-name="${esc(name)}">★</button>`;
 }
 
+const cardId = (ev, pinned) => `${pinned ? "p" : "g"}-${ev.league}-${ev.id}`;
+// Team colors (from ESPN, validated server-side as #rrggbb) paint the 3px bar on top of the card.
+function teamColorStyle(ev) {
+  const a = ev.away?.color, h = ev.home?.color;
+  return a && h ? ` style="--c-away:${a};--c-home:${h}"` : "";
+}
+
 function cardShell(ev, main, opts = {}) {
   const favGame = opts.pinned;
+  const colors = teamColorStyle(ev);
   return `
-    <article class="game ${favGame ? "is-pinned" : ""} ${ev.state === "in" ? "is-live" : ""}">
+    <article id="${cardId(ev, opts.pinned)}" class="game ${favGame ? "is-pinned" : ""} ${ev.state === "in" ? "is-live" : ""} ${colors ? "has-colors" : ""}"${colors}>
       <div class="game-main">
         <div class="game-meta">
           ${timeLabel(ev, opts)}
@@ -511,9 +519,9 @@ async function renderPinned({ fresh = false } = {}) {
 }
 
 function renderChips() {
-  const items = [{ id: "all", name: "All" }, ...sportOrder().map((id) => SPORT_BY_ID[id])];
+  const items = [{ id: "all", name: "All sports" }, ...sportOrder().map((id) => SPORT_BY_ID[id])];
   $("#sportChips").innerHTML = items.map((s) =>
-    `<button class="chip ${state.sport === s.id ? "active" : ""}" data-sport="${s.id}">${s.id === "all" ? "" : SPORT_ICON[s.id] + " "}${esc(s.name)}</button>`).join("");
+    `<button class="chip ${state.sport === s.id ? "active" : ""}" data-sport="${s.id}">${s.id === "all" ? "🏟️" : SPORT_ICON[s.id]} ${esc(s.name)}</button>`).join("");
   const { region, guessed } = regionFor(state.prefs.area);
   $("#orderHint").innerHTML = state.prefs.sportOrder
     ? `Showing sports in <b>your order</b>.`
@@ -534,7 +542,63 @@ function renderCalendar() {
   $("#calGrid").innerHTML = dows + days;
 }
 
-function rerenderAll(opts) { renderChips(); render(opts); renderPinned(opts); }
+// ---------- live now rail ----------
+// Every live team game today, as compact scoreboard tiles; click jumps to the full card.
+async function renderLiveRail({ fresh = false } = {}) {
+  const today = startOfDay(new Date());
+  const events = forDay(await fetchDay(today, { fresh }), today);
+  const order = sportOrder();
+  const live = events
+    .filter((e) => e.state === "in" && e.kind === "match")
+    .sort((a, b) => order.indexOf(a.sport) - order.indexOf(b.sport) || byStart(a, b));
+  $("#liveRail").hidden = !live.length;
+  $("#liveTiles").innerHTML = live.map((ev) => {
+    const row = (t, o) => {
+      const trailing = Number(t.score) < Number(o.score);
+      return `<div class="lt-team ${trailing ? "trailing" : ""}">
+        ${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : `<span class="logo-ph sm"></span>`}
+        <span>${esc(t.abbr || t.short)}</span><b>${esc(t.score ?? "")}</b></div>`;
+    };
+    return `<button type="button" class="live-tile" data-jump="${cardId(ev)}"${teamColorStyle(ev)}
+        aria-label="${esc(ev.away.name)} at ${esc(ev.home.name)}, ${esc(ev.statusText)}">
+      <div class="lt-meta"><span>${esc(LEAGUE_BY_ID[ev.league]?.name || "")}</span><span class="lt-status">${esc(ev.statusText)}</span></div>
+      ${row(ev.away, ev.home)}${row(ev.home, ev.away)}
+    </button>`;
+  }).join("");
+}
+
+async function jumpToCard(id) {
+  let el = document.getElementById(id);
+  if (!el && (state.view !== "today" || state.sport !== "all" || state.search)) {
+    // The game isn't in the current view: go to Today / All sports, then jump.
+    state.view = "today"; state.sport = "all"; state.search = ""; $("#search").value = "";
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x.dataset.view === "today"));
+    renderChips();
+    await render();
+    el = document.getElementById(id);
+  }
+  if (!el) return;
+  el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  el.animate?.([{ outline: "2px solid var(--live)" }, { outline: "2px solid transparent" }], { duration: 1600 });
+}
+
+// ---------- theme ----------
+function applyThemeButton() {
+  const light = document.documentElement.dataset.theme === "light";
+  const b = $("#themeToggle");
+  b.textContent = light ? "☾" : "☀";
+  b.setAttribute("aria-label", light ? "Switch to dark mode" : "Switch to light mode");
+  document.querySelector('meta[name="theme-color"]').content = light ? "#f3f4f6" : "#121315";
+}
+$("#themeToggle").onclick = () => {
+  const light = document.documentElement.dataset.theme !== "light";
+  if (light) document.documentElement.dataset.theme = "light"; else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem("gt:theme", light ? "light" : "dark"); } catch {}
+  applyThemeButton();
+};
+applyThemeButton();
+
+function rerenderAll(opts) { renderChips(); render(opts); renderPinned(opts); renderLiveRail(opts); }
 
 // ---------- team picker ----------
 let pickerLeague = "mlb";
@@ -764,6 +828,9 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  const jump = t.closest("[data-jump]");
+  if (jump) { jumpToCard(jump.dataset.jump); return; }
+
   const tab = t.closest(".tab");
   if (tab) {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === tab));
@@ -843,9 +910,13 @@ $("#openOrder").onclick = () => openProfile(true);
   let tick = 0;
   setInterval(() => {
     tick++;
-    const live = !!document.querySelector(".game.is-live");
+    const live = !!document.querySelector(".game.is-live, .live-tile");
     const showingToday = state.view !== "calendar" || sameDay(state.selectedDate, new Date());
-    if (showingToday && (live || tick % 4 === 0)) { render({ fresh: true }); renderPinned({ fresh: true }); }
+    if (live || tick % 4 === 0) {
+      // One fresh fetch of today per tick: the first caller refreshes it, the rest reuse it.
+      if (showingToday) { render({ fresh: true }); renderPinned(); renderLiveRail(); }
+      else renderLiveRail({ fresh: true });
+    }
   }, 30_000);
   setInterval(() => {
     for (const [k, ev] of pbpEvents) if (ev.state === "in" && document.querySelector(`.pbp[data-pbp="${CSS.escape(k)}"]`)) loadPlays(k);
